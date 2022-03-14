@@ -2,15 +2,19 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("CtfV1", function () {
-  it("Should return the new greeting once it's changed", async function () {
+  it("createCtf() with no value", async function () {
+    [signer] = await ethers.getSigners();
+
     const CtfV1 = await ethers.getContractFactory("CtfV1");
-    const ctf = await CtfV1.deploy();
-    await ctf.deployed();
+    const contract = await CtfV1.deploy();
+    await contract.deployed();
 
-    expect(await ctf.getCtfsCount()).to.equal(0);
+    await contract.createCtf('Party Town', 'partypass');
 
-    await ctf.createCtf('Party Town', 'partypass');
+    let { name, creator, balance } = await contract.ctfs(1);
 
-    expect(await ctf.getCtfsCount()).to.equal(1);
+    expect(name).to.equal('Party Town');
+    expect(creator).to.equal(signer.address);
+    expect(balance).to.equal(0);
   });
 });
