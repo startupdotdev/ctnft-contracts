@@ -10,10 +10,9 @@ describe("CtfV1", function () {
       const contract = await CtfV1.deploy();
       await contract.deployed();
 
-      // With no value reverts
       await expect(
         contract.createCtf("Party Town", "partypass")
-      ).to.be.revertedWith("An Ether prize is required to create a CTF");
+      ).to.be.revertedWith("Ether required to create a CTF");
     });
 
     it("with ether sent creates a new CTF", async function () {
@@ -24,43 +23,116 @@ describe("CtfV1", function () {
       await contract.deployed();
 
       let etherValue = ethers.utils.parseEther("1.0");
-      txn = await contract
+      let txn = await contract
         .connect(signer2)
         .createCtf("Party Town 2", "partypass2", { value: etherValue });
       await txn.wait();
 
-      result = await contract.ctfs(1);
+      let result = await contract.ctfs(1);
 
       expect(result.name).to.equal("Party Town 2");
       expect(result.creator).to.equal(signer2.address);
       expect(result.balance).to.equal(etherValue);
+      expect(result.isActive).to.equal(true);
     });
   });
 
-  // describe("solveCtf()", () => {
-  //   let contract;
-  //   const ctfId = 1;
+  describe("commitAnswer()", async () => {
+    it("reverts if the ctf doesn't exist", async () => {
+      [signer1, signer2] = await ethers.getSigners();
 
-  //   beforeEach(async () => {
-  //     [signer1, signer2] = await ethers.getSigners();
+      const CtfV1 = await ethers.getContractFactory("CtfV1");
+      const contract = await CtfV1.deploy();
+      await contract.deployed();
 
-  //     const CtfV1 = await ethers.getContractFactory("CtfV1");
-  //     contract = await CtfV1.deploy();
-  //     await contract.deployed();
+      await expect(
+        contract.commitAnswer(1, ethers.utils.id("boop"))
+      ).to.be.revertedWith("CTF not active or doesn't exist");
+    });
 
-  //     let txn = await contract.createCtf("Party Town", "correct-answer");
-  //     await txn.wait();
-  //   });
+    it("reverts if the hash isn't a keccak256 length value", async () => {
+      [signer1, signer2] = await ethers.getSigners();
 
-  //   it("with the correct answer stops the contest and pays the balance", async () => {
-  //     await expect(
-  //       await contract.solveCtf(ctfId, "correct-answer")
-  //     ).to.changeEtherBalance(signer1, ethers.utils.parseEther("1"));
+      const CtfV1 = await ethers.getContractFactory("CtfV1");
+      const contract = await CtfV1.deploy();
+      await contract.deployed();
+      let etherValue = ethers.utils.parseEther("1.0");
 
-  //     let ctf = await contract.ctfs(1);
-  //     expect(ctf.isActive).to.equal(false);
-  //   });
+      let txn = await contract
+        .connect(signer2)
+        .createCtf("Party Town 2", "partypass2", { value: etherValue });
+      await txn.wait();
 
-  //   it("with the incorrect answer stops the contest and pays the balance", async () => {});
-  // });
+      let ctfId = 1;
+      let answer = "not-keccak256-hash-length";
+      await expect(contract.commitAnswer(ctfId, answer)).to.be.revertedWith(
+        "Answer is not a keccak256 hash"
+      );
+    });
+
+    it("accepts an answer that is hashed", async () => {
+      [signer1, signer2] = await ethers.getSigners();
+
+      const CtfV1 = await ethers.getContractFactory("CtfV1");
+      const contract = await CtfV1.deploy();
+      await contract.deployed();
+      let etherValue = ethers.utils.parseEther("1.0");
+
+      let txn = await contract
+        .connect(signer2)
+        .createCtf("Party Town 2", "partypass2", { value: etherValue });
+      await txn.wait();
+
+      let ctfId = 1;
+
+      let answer = ethers.utils.id("boop");
+      let commitTxn = await contract.commitAnswer(ctfId, answer);
+      await commitTxn.wait();
+
+      let commitAnswer = await contract.answers(ctfId, signer1.address);
+      expect(commitAnswer).to.equal(answer);
+    });
+
+    it("returns empty if the user hasn't submitted an answer yet", async () => {
+      [signer1, signer2] = await ethers.getSigners();
+
+      const CtfV1 = await ethers.getContractFactory("CtfV1");
+      const contract = await CtfV1.deploy();
+      await contract.deployed();
+      let etherValue = ethers.utils.parseEther("1.0");
+
+      let txn = await contract
+        .connect(signer2)
+        .createCtf("Party Town 2", "partypass2", { value: etherValue });
+      await txn.wait();
+
+      let ctfId = 1;
+
+      let commitAnswer = await contract.answers(ctfId, signer1.address);
+      expect(commitAnswer).to.equal("");
+    });
+
+    it("reverts if the user has already submitted an answer yet", async () => {
+      [signer1, signer2] = await ethers.getSigners();
+
+      const CtfV1 = await ethers.getContractFactory("CtfV1");
+      const contract = await CtfV1.deploy();
+      await contract.deployed();
+      let etherValue = ethers.utils.parseEther("1.0");
+
+      let txn = await contract
+        .connect(signer2)
+        .createCtf("Party Town 2", "partypass2", { value: etherValue });
+      await txn.wait();
+
+      let ctfId = 1;
+      let answer = ethers.utils.id("boop");
+      let commitTxn = await contract.commitAnswer(ctfId, answer);
+      await commitTxn.wait();
+
+      await expect(contract.commitAnswer(ctfId, answer)).to.be.revertedWith(
+        "Already submitted an answer"
+      );
+    });
+  });
 });
