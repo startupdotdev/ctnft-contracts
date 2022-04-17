@@ -35,8 +35,8 @@ contract CtfV1 {
   }
 
   // TODO: Revert if the contest is over
-  function commitAnswer(uint256 ctfId, string memory answerHash) public {
-    require(bytes(answerHash).length == 66, "Answer is not a keccak256 hash");
+  function commitAnswer(uint256 ctfId, string memory saltedHash) public {
+    require(bytes(saltedHash).length == 66, "Answer is not a keccak256 hash");
 
     Ctf memory ctf = ctfs[ctfId];
 
@@ -47,6 +47,6 @@ contract CtfV1 {
       "Already submitted an answer"
     );
 
-    answers[ctfId][msg.sender] = answerHash;
+    answers[ctfId][msg.sender] = saltedHash;
   }
 }
