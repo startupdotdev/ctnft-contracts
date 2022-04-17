@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "hardhat/console.sol";
 
-// Note: this is very insecure. :)
 contract CtfV1 {
   using Counters for Counters.Counter;
 
