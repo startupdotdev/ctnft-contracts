@@ -5,6 +5,8 @@ describe("CtfV1", function () {
   let contract;
   let secret = "secret-withsalt";
   let secretHash = ethers.utils.id(secret);
+  let ctfId;
+  let etherValue = ethers.utils.parseEther("1.0");
 
   beforeEach(async () => {
     [signer1] = await ethers.getSigners();
@@ -14,6 +16,15 @@ describe("CtfV1", function () {
     await contract.deployed();
   });
 
+  const createCtf = async () => {
+    let txn = await contract.createCtf("Party Town", secretHash, {
+      value: etherValue,
+    });
+    await txn.wait();
+
+    ctfId = 1;
+  };
+
   describe("createCtf()", () => {
     it("reverts without ether sent", async () => {
       await expect(
@@ -22,13 +33,9 @@ describe("CtfV1", function () {
     });
 
     it("with ether sent creates a new CTF", async function () {
-      let etherValue = ethers.utils.parseEther("1.0");
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
+      await createCtf();
 
-      let result = await contract.ctfs(1);
+      let result = await contract.ctfs(ctfId);
 
       expect(result.name).to.equal("Party Town");
       expect(result.creator).to.equal(signer1.address);
@@ -46,14 +53,7 @@ describe("CtfV1", function () {
     });
 
     it("accepts an answer", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       let answer = ethers.utils.id("boop + salt");
       let commitTxn = await contract.commitAnswer(ctfId, answer);
@@ -64,28 +64,15 @@ describe("CtfV1", function () {
     });
 
     it("returns empty if the user hasn't submitted an answer yet", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       let commitAnswer = await contract.answers(ctfId, signer1.address);
       expect(commitAnswer).to.equal(ethers.constants.HashZero);
     });
 
     it("reverts if the user has already submitted an answer yet", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
+      await createCtf();
 
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
       let answer = ethers.utils.id("boop + salt");
       let commitTxn = await contract.commitAnswer(ctfId, answer);
       await commitTxn.wait();
@@ -98,13 +85,7 @@ describe("CtfV1", function () {
 
   describe("revealAnswer()", async () => {
     it("reverts if there isn't a committed answer", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       await expect(
         contract.revealAnswer(ctfId, "answer", "the salt")
@@ -112,13 +93,7 @@ describe("CtfV1", function () {
     });
 
     it("reverts if the submitted answer doesn't match the committed answer", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       let answer = "boop";
       let salt = "-thesalt";
@@ -136,13 +111,7 @@ describe("CtfV1", function () {
     // it("reverts if the ctf doesn't exist", async () => {});
 
     it("reverts if the submitted answer doesn't match the secret", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       let answer = "boop";
       let salt = "-thesalt";
@@ -157,13 +126,7 @@ describe("CtfV1", function () {
     });
 
     it("succeeds and pays the winner if the answer matches the secret", async () => {
-      let etherValue = ethers.utils.parseEther("1.0");
-      let txn = await contract.createCtf("Party Town", secretHash, {
-        value: etherValue,
-      });
-      await txn.wait();
-
-      let ctfId = 1;
+      await createCtf();
 
       let answer = secret;
       let salt = "-moresalt";

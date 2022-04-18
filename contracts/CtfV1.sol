@@ -32,6 +32,8 @@ contract CtfV1 {
       balance: msg.value,
       isActive: true
     });
+
+    // TODO: emit event
   }
 
   // TODO: Revert if the contest is over
@@ -46,6 +48,8 @@ contract CtfV1 {
     );
 
     answers[ctfId][msg.sender] = saltedHash;
+
+    // TODO: emit event
   }
 
   // TODO: Add re-entrancy guard for fun and profit?
@@ -82,21 +86,5 @@ contract CtfV1 {
     require(sent, "Failed to send Ether");
 
     // TODO: emit Event here
-  }
-
-  function help(string memory answer, string memory salt)
-    public
-    pure
-    returns (
-      bytes32,
-      bytes32,
-      bytes32
-    )
-  {
-    return (
-      keccak256(abi.encodePacked(answer, salt)),
-      keccak256(abi.encodePacked(answer)),
-      keccak256(abi.encode(answer))
-    );
   }
 }
