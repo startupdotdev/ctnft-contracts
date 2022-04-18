@@ -9,7 +9,7 @@ contract CtfV1 {
 
   struct Ctf {
     string name;
-    string secret;
+    bytes32 secret;
     address creator;
     uint256 balance;
     bool isActive;
@@ -19,7 +19,7 @@ contract CtfV1 {
   mapping(uint256 => Ctf) public ctfs;
   mapping(uint256 => mapping(address => bytes32)) public answers;
 
-  function createCtf(string memory name, string memory secret) public payable {
+  function createCtf(string memory name, bytes32 secret) public payable {
     require(msg.value > 0, "Ether required to create a CTF");
 
     _ctfIds.increment();
@@ -61,6 +61,15 @@ contract CtfV1 {
     require(
       keccak256(abi.encode(answer, salt)) == answers[ctfId][msg.sender],
       "Doesn't match submitted answer"
+    );
+
+    Ctf memory ctf = ctfs[ctfId];
+
+    require(ctf.isActive == true, "CTF not active or doesn't exist");
+
+    require(
+      keccak256(abi.encode(answer)) == ctf.secret,
+      "Doesn't match secret"
     );
   }
 }

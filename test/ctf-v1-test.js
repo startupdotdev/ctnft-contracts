@@ -13,28 +13,29 @@ describe("CtfV1", function () {
     await contract.deployed();
   });
 
-  // describe("createCtf()", () => {
-  //   it("reverts without ether sent", async () => {
-  //     await expect(contract.createCtf("Party Town", secret)).to.be.revertedWith(
-  //       "Ether required to create a CTF"
-  //     );
-  //   });
+  describe("createCtf()", () => {
+    it("reverts without ether sent", async () => {
+      await expect(contract.createCtf("Party Town", secret)).to.be.revertedWith(
+        "Ether required to create a CTF"
+      );
+    });
 
-  //   it("with ether sent creates a new CTF", async function () {
-  //     let etherValue = ethers.utils.parseEther("1.0");
-  //     let txn = await contract.createCtf("Party Town", secret, {
-  //       value: etherValue,
-  //     });
-  //     await txn.wait();
+    it("with ether sent creates a new CTF", async function () {
+      let etherValue = ethers.utils.parseEther("1.0");
+      let txn = await contract.createCtf("Party Town", secret, {
+        value: etherValue,
+      });
+      await txn.wait();
 
-  //     let result = await contract.ctfs(1);
+      let result = await contract.ctfs(1);
 
-  //     expect(result.name).to.equal("Party Town");
-  //     expect(result.creator).to.equal(signer1.address);
-  //     expect(result.balance).to.equal(etherValue);
-  //     expect(result.isActive).to.equal(true);
-  //   });
-  // });
+      expect(result.name).to.equal("Party Town");
+      expect(result.creator).to.equal(signer1.address);
+      expect(result.balance).to.equal(etherValue);
+      expect(result.isActive).to.equal(true);
+      expect(result.secret).to.equal(secret);
+    });
+  });
 
   describe("commitAnswer()", async () => {
     it("reverts if the ctf doesn't exist", async () => {
@@ -130,7 +131,10 @@ describe("CtfV1", function () {
       ).to.be.revertedWith("Doesn't match submitted answer");
     });
 
-    // it("reverts if the submitted answer doesn't match the secret", async () => {});
+    // TODO: after we can stop contests add this test
+    it("reverts if the ctf doesn't exist", async () => {});
+
+    it("reverts if the submitted answer doesn't match the secret", async () => {});
     // it("reverts if the submitted answer", async () => {});
     // it("pays the winner if the answer matches the secret", async () => {});
   });
