@@ -48,6 +48,7 @@ contract CtfV1 {
     answers[ctfId][msg.sender] = saltedHash;
   }
 
+  // TODO: Add re-entrancy guard for fun and profit?
   function revealAnswer(
     uint256 ctfId,
     string memory answer,
@@ -59,17 +60,43 @@ contract CtfV1 {
     );
 
     require(
-      keccak256(abi.encode(answer, salt)) == answers[ctfId][msg.sender],
+      keccak256(abi.encodePacked(answer, salt)) == answers[ctfId][msg.sender],
       "Doesn't match submitted answer"
     );
 
-    Ctf memory ctf = ctfs[ctfId];
+    Ctf storage ctf = ctfs[ctfId];
 
     require(ctf.isActive == true, "CTF not active or doesn't exist");
 
     require(
-      keccak256(abi.encode(answer)) == ctf.secret,
-      "Doesn't match secret"
+      keccak256(abi.encodePacked(answer)) == ctf.secret,
+      "Submission doesn't match secret"
+    );
+
+    // You won!
+    uint256 prize = ctf.balance;
+    ctf.balance = 0;
+    ctf.isActive = false;
+
+    (bool sent, bytes memory data) = msg.sender.call{ value: prize }("");
+    require(sent, "Failed to send Ether");
+
+    // TODO: emit Event here
+  }
+
+  function help(string memory answer, string memory salt)
+    public
+    pure
+    returns (
+      bytes32,
+      bytes32,
+      bytes32
+    )
+  {
+    return (
+      keccak256(abi.encodePacked(answer, salt)),
+      keccak256(abi.encodePacked(answer)),
+      keccak256(abi.encode(answer))
     );
   }
 }
