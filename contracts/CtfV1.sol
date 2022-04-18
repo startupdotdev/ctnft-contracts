@@ -17,7 +17,7 @@ contract CtfV1 {
 
   Counters.Counter public _ctfIds;
   mapping(uint256 => Ctf) public ctfs;
-  mapping(uint256 => mapping(address => string)) public answers;
+  mapping(uint256 => mapping(address => bytes32)) public answers;
 
   function createCtf(string memory name, string memory secret) public payable {
     require(msg.value > 0, "Ether required to create a CTF");
@@ -35,18 +35,32 @@ contract CtfV1 {
   }
 
   // TODO: Revert if the contest is over
-  function commitAnswer(uint256 ctfId, string memory saltedHash) public {
-    require(bytes(saltedHash).length == 66, "Answer is not a keccak256 hash");
-
+  function commitAnswer(uint256 ctfId, bytes32 saltedHash) public {
     Ctf memory ctf = ctfs[ctfId];
 
     require(ctf.isActive == true, "CTF not active or doesn't exist");
 
     require(
-      bytes(answers[ctfId][msg.sender]).length == 0,
+      answers[ctfId][msg.sender] == bytes32(0),
       "Already submitted an answer"
     );
 
     answers[ctfId][msg.sender] = saltedHash;
+  }
+
+  function revealAnswer(
+    uint256 ctfId,
+    string memory answer,
+    string memory salt
+  ) public {
+    require(
+      answers[ctfId][msg.sender] != bytes32(0),
+      "No previous answer committed"
+    );
+
+    require(
+      keccak256(abi.encode(answer, salt)) == answers[ctfId][msg.sender],
+      "Doesn't match submitted answer"
+    );
   }
 }
