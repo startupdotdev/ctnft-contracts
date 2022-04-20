@@ -60,14 +60,16 @@ describe("CtfV1", function () {
       await commitTxn.wait();
 
       let commitAnswer = await contract.answers(ctfId, signer1.address);
-      expect(commitAnswer).to.equal(answer);
+      expect(commitAnswer.secret).to.equal(answer);
+      expect(commitAnswer.blockNumber.toNumber()).to.be.greaterThan(0);
     });
 
     it("returns empty if the user hasn't submitted an answer yet", async () => {
       await createCtf();
 
       let commitAnswer = await contract.answers(ctfId, signer1.address);
-      expect(commitAnswer).to.equal(ethers.constants.HashZero);
+      expect(commitAnswer.secret).to.equal(ethers.constants.HashZero);
+      expect(commitAnswer.blockNumber.toNumber()).to.equal(0);
     });
 
     it("reverts if the user has already submitted an answer yet", async () => {
@@ -105,6 +107,18 @@ describe("CtfV1", function () {
       await expect(
         contract.revealAnswer(ctfId, "not", "the same")
       ).to.be.revertedWith("Doesn't match submitted answer");
+    });
+
+    it("reverts if the block isn't a future block", async () => {
+      const Tester = await ethers.getContractFactory("SameBlockTester");
+      testerContract = await Tester.deploy(contract.address);
+      await testerContract.deployed();
+
+      await expect(
+        testerContract.commitAndRevealSameBlock({
+          value: ethers.utils.parseEther("1.0"),
+        })
+      ).to.be.revertedWith("Can only reveal in future block");
     });
 
     // TODO: after we can stop contests add this test

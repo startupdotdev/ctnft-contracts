@@ -15,9 +15,14 @@ contract CtfV1 {
     bool isActive;
   }
 
+  struct Answer {
+    bytes32 secret;
+    uint256 blockNumber;
+  }
+
   Counters.Counter public _ctfIds;
   mapping(uint256 => Ctf) public ctfs;
-  mapping(uint256 => mapping(address => bytes32)) public answers;
+  mapping(uint256 => mapping(address => Answer)) public answers;
 
   function createCtf(string memory name, bytes32 secret) public payable {
     require(msg.value > 0, "Ether required to create a CTF");
@@ -43,11 +48,14 @@ contract CtfV1 {
     require(ctf.isActive == true, "CTF not active or doesn't exist");
 
     require(
-      answers[ctfId][msg.sender] == bytes32(0),
+      answers[ctfId][msg.sender].blockNumber == 0,
       "Already submitted an answer"
     );
 
-    answers[ctfId][msg.sender] = saltedHash;
+    answers[ctfId][msg.sender] = Answer({
+      secret: saltedHash,
+      blockNumber: block.number
+    });
 
     // TODO: emit event
   }
@@ -59,12 +67,18 @@ contract CtfV1 {
     string memory salt
   ) public {
     require(
-      answers[ctfId][msg.sender] != bytes32(0),
+      answers[ctfId][msg.sender].blockNumber != 0,
       "No previous answer committed"
     );
 
     require(
-      keccak256(abi.encodePacked(answer, salt)) == answers[ctfId][msg.sender],
+      block.number > answers[ctfId][msg.sender].blockNumber,
+      "Can only reveal in future block"
+    );
+
+    require(
+      keccak256(abi.encodePacked(answer, salt)) ==
+        answers[ctfId][msg.sender].secret,
       "Doesn't match submitted answer"
     );
 
