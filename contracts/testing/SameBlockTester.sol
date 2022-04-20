@@ -20,7 +20,7 @@ contract SameBlockTester {
     ctfContract = ICtf(_ctfContract);
   }
 
-  function commitAndRevealSameBlock() public payable {
+  function testCommitAndRevealSameBlock() public payable {
     string memory secret = "test";
     string memory salt = "-thesalt";
     bytes32 hash = keccak256(abi.encodePacked(secret, salt));

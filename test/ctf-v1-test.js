@@ -115,7 +115,7 @@ describe("CtfV1", function () {
       await testerContract.deployed();
 
       await expect(
-        testerContract.commitAndRevealSameBlock({
+        testerContract.testCommitAndRevealSameBlock({
           value: ethers.utils.parseEther("1.0"),
         })
       ).to.be.revertedWith("Can only reveal in future block");
